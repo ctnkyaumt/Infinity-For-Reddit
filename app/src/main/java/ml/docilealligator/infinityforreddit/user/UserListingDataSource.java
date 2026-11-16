@@ -3,6 +3,7 @@ package ml.docilealligator.infinityforreddit.user;
 import android.os.Handler;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.MutableLiveData;
 import androidx.paging.PageKeyedDataSource;
 
@@ -18,8 +19,14 @@ public class UserListingDataSource extends PageKeyedDataSource<String, UserData>
     private final Executor executor;
     private final Handler handler;
     private final Retrofit retrofit;
+    @Nullable
+    private final Retrofit oauthRetrofit;
     private final String query;
     private final SortType sortType;
+    @Nullable
+    private final String accessToken;
+    @NonNull
+    private final String accountName;
     private final boolean nsfw;
 
     private final MutableLiveData<NetworkState> paginationNetworkStateLiveData;
@@ -29,12 +36,17 @@ public class UserListingDataSource extends PageKeyedDataSource<String, UserData>
     private PageKeyedDataSource.LoadParams<String> params;
     private PageKeyedDataSource.LoadCallback<String, UserData> callback;
 
-    UserListingDataSource(Executor executor, Handler handler, Retrofit retrofit, String query, SortType sortType, boolean nsfw) {
+    UserListingDataSource(Executor executor, Handler handler, Retrofit retrofit, @Nullable Retrofit oauthRetrofit,
+                          String query, SortType sortType,
+                          @Nullable String accessToken, @NonNull String accountName, boolean nsfw) {
         this.executor = executor;
         this.handler = handler;
         this.retrofit = retrofit;
+        this.oauthRetrofit = oauthRetrofit;
         this.query = query;
         this.sortType = sortType;
+        this.accessToken = accessToken;
+        this.accountName = accountName;
         this.nsfw = nsfw;
         paginationNetworkStateLiveData = new MutableLiveData<>();
         initialLoadStateLiveData = new MutableLiveData<>();
@@ -57,7 +69,8 @@ public class UserListingDataSource extends PageKeyedDataSource<String, UserData>
     public void loadInitial(@NonNull PageKeyedDataSource.LoadInitialParams<String> params, @NonNull PageKeyedDataSource.LoadInitialCallback<String, UserData> callback) {
         initialLoadStateLiveData.postValue(NetworkState.LOADING);
 
-        FetchUserData.fetchUserListingData(executor, handler, retrofit, query, null, sortType.getType(), nsfw,
+        FetchUserData.fetchUserListingData(executor, handler, retrofit, oauthRetrofit, query, null, sortType.getType(),
+                accessToken, accountName, nsfw,
                 new FetchUserData.FetchUserListingDataListener() {
                     @Override
                     public void onFetchUserListingDataSuccess(List<UserData> UserData, String after) {
@@ -88,7 +101,8 @@ public class UserListingDataSource extends PageKeyedDataSource<String, UserData>
             return;
         }
 
-        FetchUserData.fetchUserListingData(executor, handler, retrofit, query, params.key, sortType.getType(), nsfw,
+        FetchUserData.fetchUserListingData(executor, handler, retrofit, oauthRetrofit, query, params.key, sortType.getType(),
+                accessToken, accountName, nsfw,
                 new FetchUserData.FetchUserListingDataListener() {
                     @Override
                     public void onFetchUserListingDataSuccess(List<UserData> UserData, String after) {

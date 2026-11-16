@@ -3,6 +3,7 @@ package ml.docilealligator.infinityforreddit.user;
 import android.os.Handler;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.MutableLiveData;
 import androidx.paging.DataSource;
 
@@ -15,20 +16,30 @@ public class UserListingDataSourceFactory extends DataSource.Factory {
     private final Executor executor;
     private final Handler handler;
     private final Retrofit retrofit;
+    @Nullable
+    private final Retrofit oauthRetrofit;
     private final String query;
     private SortType sortType;
+    @Nullable
+    private final String accessToken;
+    @NonNull
+    private final String accountName;
     private final boolean nsfw;
 
     private UserListingDataSource userListingDataSource;
     private final MutableLiveData<UserListingDataSource> userListingDataSourceMutableLiveData;
 
-    UserListingDataSourceFactory(Executor executor, Handler handler, Retrofit retrofit, String query,
-                                 SortType sortType, boolean nsfw) {
+    UserListingDataSourceFactory(Executor executor, Handler handler, Retrofit retrofit, @Nullable Retrofit oauthRetrofit,
+                                 String query, SortType sortType,
+                                 @Nullable String accessToken, @NonNull String accountName, boolean nsfw) {
         this.executor = executor;
         this.handler = handler;
         this.retrofit = retrofit;
+        this.oauthRetrofit = oauthRetrofit;
         this.query = query;
         this.sortType = sortType;
+        this.accessToken = accessToken;
+        this.accountName = accountName;
         this.nsfw = nsfw;
         userListingDataSourceMutableLiveData = new MutableLiveData<>();
     }
@@ -36,7 +47,8 @@ public class UserListingDataSourceFactory extends DataSource.Factory {
     @NonNull
     @Override
     public DataSource create() {
-        userListingDataSource = new UserListingDataSource(executor, handler, retrofit, query, sortType, nsfw);
+        userListingDataSource = new UserListingDataSource(executor, handler, retrofit, oauthRetrofit,
+                query, sortType, accessToken, accountName, nsfw);
         userListingDataSourceMutableLiveData.postValue(userListingDataSource);
         return userListingDataSource;
     }

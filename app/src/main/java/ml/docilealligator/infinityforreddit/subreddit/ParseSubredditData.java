@@ -59,7 +59,7 @@ public class ParseSubredditData {
                 }
             }
 
-            String after = jsonObject.getJSONObject(JSONUtils.DATA_KEY).getString(JSONUtils.AFTER_KEY);
+            String after = jsonObject.getJSONObject(JSONUtils.DATA_KEY).isNull(JSONUtils.AFTER_KEY) ? null : jsonObject.getJSONObject(JSONUtils.DATA_KEY).getString(JSONUtils.AFTER_KEY);
 
             handler.post(() -> fetchSubredditListingDataListener.onFetchSubredditListingDataSuccess(subredditListingData, after));
         } catch (JSONException e) {
@@ -89,7 +89,7 @@ public class ParseSubredditData {
                     }
                 }
 
-                String after = jsonObject.getJSONObject(JSONUtils.DATA_KEY).getString(JSONUtils.AFTER_KEY);
+                String after = jsonObject.getJSONObject(JSONUtils.DATA_KEY).isNull(JSONUtils.AFTER_KEY) ? null : jsonObject.getJSONObject(JSONUtils.DATA_KEY).getString(JSONUtils.AFTER_KEY);
 
                 handler.post(() -> parseSubredditListingDataListener.onParseSubredditListingDataSuccess(subredditListingData, after));
             } catch (JSONException e) {
@@ -107,10 +107,10 @@ public class ParseSubredditData {
         }
         String id = subredditDataJsonObject.getString(JSONUtils.NAME_KEY);
         String subredditFullName = subredditDataJsonObject.getString(JSONUtils.DISPLAY_NAME_KEY);
-        String description = subredditDataJsonObject.getString(JSONUtils.PUBLIC_DESCRIPTION_KEY).trim();
-        String sidebarDescription = Utils.modifyMarkdown(subredditDataJsonObject.getString(JSONUtils.DESCRIPTION_KEY).trim());
+        String description = subredditDataJsonObject.isNull(JSONUtils.PUBLIC_DESCRIPTION_KEY) ? "" : subredditDataJsonObject.getString(JSONUtils.PUBLIC_DESCRIPTION_KEY).trim();
+        String sidebarDescription = subredditDataJsonObject.isNull(JSONUtils.DESCRIPTION_KEY) ? "" : Utils.modifyMarkdown(subredditDataJsonObject.getString(JSONUtils.DESCRIPTION_KEY).trim());
         long createdUTC = subredditDataJsonObject.getLong(JSONUtils.CREATED_UTC_KEY) * 1000;
-        String suggestedCommentSort = subredditDataJsonObject.getString(JSONUtils.SUGGESTED_COMMENT_SORT_KEY);
+        String suggestedCommentSort = subredditDataJsonObject.isNull(JSONUtils.SUGGESTED_COMMENT_SORT_KEY) ? null : subredditDataJsonObject.getString(JSONUtils.SUGGESTED_COMMENT_SORT_KEY);
 
         String bannerImageUrl;
         if (subredditDataJsonObject.isNull(JSONUtils.BANNER_BACKGROUND_IMAGE_KEY)) {

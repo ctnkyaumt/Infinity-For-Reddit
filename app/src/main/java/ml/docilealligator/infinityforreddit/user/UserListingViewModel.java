@@ -3,6 +3,7 @@ package ml.docilealligator.infinityforreddit.user;
 import android.os.Handler;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
@@ -13,6 +14,7 @@ import androidx.paging.PagedList;
 
 import java.util.concurrent.Executor;
 
+import ml.docilealligator.infinityforreddit.account.Account;
 import ml.docilealligator.infinityforreddit.state.NetworkState;
 import ml.docilealligator.infinityforreddit.thing.SortType;
 import retrofit2.Retrofit;
@@ -26,7 +28,14 @@ public class UserListingViewModel extends ViewModel {
     private final MutableLiveData<SortType> sortTypeLiveData;
 
     public UserListingViewModel(Executor executor, Handler handler, Retrofit retrofit, String query, SortType sortType, boolean nsfw) {
-        userListingDataSourceFactory = new UserListingDataSourceFactory(executor, handler, retrofit, query, sortType, nsfw);
+        this(executor, handler, retrofit, null, query, sortType, null, Account.ANONYMOUS_ACCOUNT, nsfw);
+    }
+
+    public UserListingViewModel(Executor executor, Handler handler, Retrofit retrofit, @Nullable Retrofit oauthRetrofit,
+                                String query, SortType sortType,
+                                @Nullable String accessToken, @NonNull String accountName, boolean nsfw) {
+        userListingDataSourceFactory = new UserListingDataSourceFactory(executor, handler, retrofit, oauthRetrofit,
+                query, sortType, accessToken, accountName, nsfw);
 
         initialLoadingState = Transformations.switchMap(userListingDataSourceFactory.getUserListingDataSourceMutableLiveData(),
                 UserListingDataSource::getInitialLoadStateLiveData);
@@ -81,23 +90,39 @@ public class UserListingViewModel extends ViewModel {
         private final Executor executor;
         private final Handler handler;
         private final Retrofit retrofit;
+        @Nullable
+        private final Retrofit oauthRetrofit;
         private final String query;
         private final SortType sortType;
+        @Nullable
+        private final String accessToken;
+        @NonNull
+        private final String accountName;
         private final boolean nsfw;
 
         public Factory(Executor executor, Handler handler, Retrofit retrofit, String query, SortType sortType, boolean nsfw) {
+            this(executor, handler, retrofit, null, query, sortType, null, Account.ANONYMOUS_ACCOUNT, nsfw);
+        }
+
+        public Factory(Executor executor, Handler handler, Retrofit retrofit, @Nullable Retrofit oauthRetrofit,
+                       String query, SortType sortType,
+                       @Nullable String accessToken, @NonNull String accountName, boolean nsfw) {
             this.executor = executor;
             this.handler = handler;
             this.retrofit = retrofit;
+            this.oauthRetrofit = oauthRetrofit;
             this.query = query;
             this.sortType = sortType;
+            this.accessToken = accessToken;
+            this.accountName = accountName;
             this.nsfw = nsfw;
         }
 
         @NonNull
         @Override
         public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-            return (T) new UserListingViewModel(executor, handler, retrofit, query, sortType, nsfw);
+            return (T) new UserListingViewModel(executor, handler, retrofit, oauthRetrofit, query, sortType,
+                    accessToken, accountName, nsfw);
         }
     }
 }

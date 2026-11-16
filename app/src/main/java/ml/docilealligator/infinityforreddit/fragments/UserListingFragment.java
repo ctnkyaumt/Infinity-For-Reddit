@@ -173,7 +173,7 @@ public class UserListingFragment extends Fragment implements FragmentCommunicato
         }
 
         UserListingViewModel.Factory factory = new UserListingViewModel.Factory(mExecutor, mActivity.mHandler,
-                mRetrofit, mQuery, sortType, nsfw);
+                mRetrofit, mOauthRetrofit, mQuery, sortType, mActivity.accessToken, mActivity.accountName, nsfw);
         mUserListingViewModel = new ViewModelProvider(this, factory).get(UserListingViewModel.class);
         mUserListingViewModel.getUsers().observe(getViewLifecycleOwner(), UserData -> mAdapter.submitList(UserData));
 

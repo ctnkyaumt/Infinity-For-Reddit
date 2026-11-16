@@ -88,9 +88,10 @@ public interface RedditAPI {
                                   @Query("sort") SortType.Type sort, @Query("include_over_18") int nsfw,
                                   @HeaderMap Map<String, String> headers);
 
-    @GET("search.json?raw_json=1&type=user&limit=100")
+    @GET("users/search.json?raw_json=1&limit=100")
     Call<String> searchUsers(@Query("q") String profileName, @Query("after") String after,
-                             @Query("sort") SortType.Type sort, @Query("include_over_18") int nsfw);
+                             @Query("sort") SortType.Type sort, @Query("include_over_18") int nsfw,
+                             @HeaderMap Map<String, String> headers);
 
     @FormUrlEncoded
     @POST("api/comment")

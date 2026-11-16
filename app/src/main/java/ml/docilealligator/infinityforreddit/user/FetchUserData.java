@@ -12,9 +12,12 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
+import ml.docilealligator.infinityforreddit.account.Account;
 import ml.docilealligator.infinityforreddit.database.RedditDataRoomDatabase;
 import ml.docilealligator.infinityforreddit.apis.RedditAPI;
 import ml.docilealligator.infinityforreddit.thing.SortType;
@@ -110,9 +113,16 @@ public class FetchUserData {
 
     public static void fetchUserListingData(Executor executor, Handler handler, Retrofit retrofit, String query, String after, SortType.Type sortType, boolean nsfw,
                                             FetchUserListingDataListener fetchUserListingDataListener) {
-        RedditAPI api = retrofit.create(RedditAPI.class);
+        fetchUserListingData(executor, handler, retrofit, null, query, after, sortType, null, Account.ANONYMOUS_ACCOUNT, nsfw, fetchUserListingDataListener);
+    }
 
-        Call<String> userInfo = api.searchUsers(query, after, sortType, nsfw ? 1 : 0);
+    public static void fetchUserListingData(Executor executor, Handler handler, Retrofit retrofit, @Nullable Retrofit oauthRetrofit,
+                                            String query, String after, SortType.Type sortType, @Nullable String accessToken,
+                                            @NonNull String accountName, boolean nsfw, FetchUserListingDataListener fetchUserListingDataListener) {
+        RedditAPI api = (Account.ANONYMOUS_ACCOUNT.equals(accountName) || oauthRetrofit == null ? retrofit : oauthRetrofit).create(RedditAPI.class);
+        Map<String, String> headers = Account.ANONYMOUS_ACCOUNT.equals(accountName) ? new HashMap<>() : APIUtils.getOAuthHeader(accessToken);
+
+        Call<String> userInfo = api.searchUsers(query, after, sortType, nsfw ? 1 : 0, headers);
         final String[] responseString = {null};
         userInfo.enqueue(new Callback<>() {
             @Override
@@ -122,7 +132,7 @@ public class FetchUserData {
                         try {
                             responseString[0] = response.body();
                             JSONObject jsonResponse = new JSONObject(responseString[0]);
-                            String newAfter = jsonResponse.getJSONObject(JSONUtils.DATA_KEY).getString(JSONUtils.AFTER_KEY);
+                            String newAfter = jsonResponse.getJSONObject(JSONUtils.DATA_KEY).isNull(JSONUtils.AFTER_KEY) ? null : jsonResponse.getJSONObject(JSONUtils.DATA_KEY).getString(JSONUtils.AFTER_KEY);
                             JSONArray children = jsonResponse.getJSONObject(JSONUtils.DATA_KEY).getJSONArray(JSONUtils.CHILDREN_KEY);
                             List<UserData> userDataList = new ArrayList<>();
                             for (int i = 0; i < children.length(); i++) {
@@ -164,17 +174,18 @@ public class FetchUserData {
 
         userDataJson = userDataJson.getJSONObject(JSONUtils.DATA_KEY);
         String userName = userDataJson.getString(JSONUtils.NAME_KEY);
-        String iconImageUrl = userDataJson.getString(JSONUtils.ICON_IMG_KEY);
+        String iconImageUrl = userDataJson.isNull(JSONUtils.ICON_IMG_KEY) ? "" : userDataJson.getString(JSONUtils.ICON_IMG_KEY);
         String bannerImageUrl = "";
         boolean canBeFollowed;
         boolean isNsfw;
         String description;
         String title;
         if (userDataJson.has(JSONUtils.SUBREDDIT_KEY) && !userDataJson.isNull(JSONUtils.SUBREDDIT_KEY)) {
-            bannerImageUrl = userDataJson.getJSONObject(JSONUtils.SUBREDDIT_KEY).getString(JSONUtils.BANNER_IMG_KEY);
-            isNsfw = userDataJson.getJSONObject(JSONUtils.SUBREDDIT_KEY).getBoolean(JSONUtils.OVER_18_KEY);
-            description = userDataJson.getJSONObject(JSONUtils.SUBREDDIT_KEY).getString(JSONUtils.PUBLIC_DESCRIPTION_KEY);
-            title = userDataJson.getJSONObject(JSONUtils.SUBREDDIT_KEY).getString(JSONUtils.TITLE_KEY);
+            JSONObject subredditJson = userDataJson.getJSONObject(JSONUtils.SUBREDDIT_KEY);
+            bannerImageUrl = subredditJson.isNull(JSONUtils.BANNER_IMG_KEY) ? "" : subredditJson.getString(JSONUtils.BANNER_IMG_KEY);
+            isNsfw = !subredditJson.isNull(JSONUtils.OVER_18_KEY) && subredditJson.getBoolean(JSONUtils.OVER_18_KEY);
+            description = subredditJson.isNull(JSONUtils.PUBLIC_DESCRIPTION_KEY) ? "" : subredditJson.getString(JSONUtils.PUBLIC_DESCRIPTION_KEY);
+            title = subredditJson.isNull(JSONUtils.TITLE_KEY) ? "" : subredditJson.getString(JSONUtils.TITLE_KEY);
             canBeFollowed = true;
         } else {
             isNsfw = false;
@@ -182,20 +193,20 @@ public class FetchUserData {
             title = "";
             canBeFollowed = false;
         }
-        int linkKarma = userDataJson.getInt(JSONUtils.LINK_KARMA_KEY);
-        int commentKarma = userDataJson.getInt(JSONUtils.COMMENT_KARMA_KEY);
+        int linkKarma = userDataJson.optInt(JSONUtils.LINK_KARMA_KEY, 0);
+        int commentKarma = userDataJson.optInt(JSONUtils.COMMENT_KARMA_KEY, 0);
         int awarderKarma = 0;
         int awardeeKarma = 0;
         int totalKarma = linkKarma + commentKarma;
         if (parseFullKarma) {
-            awarderKarma = userDataJson.getInt(JSONUtils.AWARDER_KARMA_KEY);
-            awardeeKarma = userDataJson.getInt(JSONUtils.AWARDEE_KARMA_KEY);
-            totalKarma = userDataJson.getInt(JSONUtils.TOTAL_KARMA_KEY);
+            awarderKarma = userDataJson.optInt(JSONUtils.AWARDER_KARMA_KEY, 0);
+            awardeeKarma = userDataJson.optInt(JSONUtils.AWARDEE_KARMA_KEY, 0);
+            totalKarma = userDataJson.optInt(JSONUtils.TOTAL_KARMA_KEY, totalKarma);
         }
-        long cakeday = userDataJson.getLong(JSONUtils.CREATED_UTC_KEY) * 1000;
-        boolean isGold = userDataJson.getBoolean(JSONUtils.IS_GOLD_KEY);
-        boolean isFriend = userDataJson.getBoolean(JSONUtils.IS_FRIEND_KEY);
-        boolean isMod = userDataJson.getBoolean(JSONUtils.IS_MOD_KEY);
+        long cakeday = (long) (userDataJson.optDouble(JSONUtils.CREATED_UTC_KEY, 0) * 1000);
+        boolean isGold = userDataJson.optBoolean(JSONUtils.IS_GOLD_KEY, false);
+        boolean isFriend = userDataJson.optBoolean(JSONUtils.IS_FRIEND_KEY, false);
+        boolean isMod = userDataJson.optBoolean(JSONUtils.IS_MOD_KEY, false);
 
         return new UserData(userName, iconImageUrl, bannerImageUrl, linkKarma, commentKarma, awarderKarma,
                 awardeeKarma, totalKarma, cakeday, isGold, isFriend, canBeFollowed, isNsfw, description, title, isMod);
