@@ -47,6 +47,11 @@ public class SharedPreferencesUtils {
     public static final String CUSTOM_CONTENT_FONT_FAMILY_KEY = "custom_content_font_family";
     public static final String REDDIT_USER_AGREEMENT_KEY = "reddit_user_agreement";
     public static final String HIDE_FAB_IN_POST_FEED = "hide_fab_in_post_feed";
+    public static final String OAUTH_STATE = "oauth_state";
+    public static final String CUSTOM_CLIENT_ID = "custom_client_id";
+    public static final String CUSTOM_REDIRECT_URI = "custom_redirect_uri";
+    public static final String CUSTOM_USER_AGENT = "custom_user_agent";
+    public static final String RESET_API_SETTINGS = "reset_api_settings";
 
     public static final String SORT_TYPE_SHARED_PREFERENCES_FILE = "ml.docilealligator.infinityforreddit.sort_type";
     public static final String SORT_TYPE_BEST_POST = "sort_type_best_post";

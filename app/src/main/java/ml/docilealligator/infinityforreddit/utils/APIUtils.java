@@ -1,5 +1,6 @@
 package ml.docilealligator.infinityforreddit.utils;
 
+import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.util.Base64;
 
@@ -30,9 +31,14 @@ public class APIUtils {
     public static final String STREAMABLE_API_BASE_URI = "https://api.streamable.com";
     public static final String SERVER_API_BASE_URI = "http://127.0.0.1";
 
+    public static final String DEFAULT_CLIENT_ID = "yH0aTnJEt6qUgGn835B4vg";
+    public static final String DEFAULT_REDIRECT_URI = "redreader://rr_oauth_redir";
+    public static final String DEFAULT_USER_AGENT = "org.quantumbadger.redreader/1.27";
+    public static final String DEFAULT_ANONYMOUS_USER_AGENT = "org.quantumbadger.redreader/1.27";
+
     public static final String CLIENT_ID_KEY = "client_id";
     public static final String CLIENT_SECRET_KEY = "client_secret";
-    public static final String CLIENT_ID = "";
+    public static String CLIENT_ID = DEFAULT_CLIENT_ID;
     public static final String IMGUR_CLIENT_ID = "Client-ID cc671794e0ab397";
     public static final String REDGIFS_CLIENT_ID = "1828d0bcc93-15ac-bde6-0005-d2ecbe8daab3";
     public static final String REDGIFS_CLIENT_SECRET = "TJBlw7jRXW65NAGgFBtgZHu97WlzRXHYybK81sZ9dLM=";
@@ -42,7 +48,7 @@ public class APIUtils {
     public static final String STATE_KEY = "state";
     public static final String STATE = "23ro8xlxvzp4asqd";
     public static final String REDIRECT_URI_KEY = "redirect_uri";
-    public static final String REDIRECT_URI = "infinity://localhost";
+    public static String REDIRECT_URI = DEFAULT_REDIRECT_URI;
     public static final String DURATION_KEY = "duration";
     public static final String DURATION = "permanent";
     public static final String SCOPE_KEY = "scope";
@@ -52,8 +58,8 @@ public class APIUtils {
     public static final String AUTHORIZATION_KEY = "Authorization";
     public static final String AUTHORIZATION_BASE = "bearer ";
     public static final String USER_AGENT_KEY = "User-Agent";
-    public static final String USER_AGENT = "";
-    public static final String ANONYMOUS_USER_AGENT = "";
+    public static String USER_AGENT = DEFAULT_USER_AGENT;
+    public static String ANONYMOUS_USER_AGENT = DEFAULT_ANONYMOUS_USER_AGENT;
     public static final String USERNAME_KEY = "username";
 
     public static final String GRANT_TYPE_KEY = "grant_type";
@@ -136,9 +142,29 @@ public class APIUtils {
     public static final String CONVERSATION_IDS_KEY = "conversationIds";
     public static final String NUM_HOURS_KEY = "num_hours";
 
+    public static void init(SharedPreferences prefs) {
+        if (prefs == null) return;
+        String customClientId = prefs.getString(SharedPreferencesUtils.CUSTOM_CLIENT_ID, "");
+        if (customClientId != null) customClientId = customClientId.trim();
+        else customClientId = "";
+
+        String customRedirectUri = prefs.getString(SharedPreferencesUtils.CUSTOM_REDIRECT_URI, "");
+        if (customRedirectUri != null) customRedirectUri = customRedirectUri.trim();
+        else customRedirectUri = "";
+
+        String customUserAgent = prefs.getString(SharedPreferencesUtils.CUSTOM_USER_AGENT, "");
+        if (customUserAgent != null) customUserAgent = customUserAgent.trim();
+        else customUserAgent = "";
+
+        CLIENT_ID = customClientId.isEmpty() ? DEFAULT_CLIENT_ID : customClientId;
+        REDIRECT_URI = customRedirectUri.isEmpty() ? DEFAULT_REDIRECT_URI : customRedirectUri;
+        USER_AGENT = customUserAgent.isEmpty() ? DEFAULT_USER_AGENT : customUserAgent;
+        ANONYMOUS_USER_AGENT = USER_AGENT;
+    }
+
     public static Map<String, String> getHttpBasicAuthHeader() {
         Map<String, String> params = new HashMap<>();
-        String credentials = String.format("%s:%s", APIUtils.CLIENT_ID, "");
+        String credentials = String.format("%s:%s", CLIENT_ID, "");
         String auth = "Basic " + Base64.encodeToString(credentials.getBytes(), Base64.NO_WRAP);
         params.put(APIUtils.AUTHORIZATION_KEY, auth);
         return params;

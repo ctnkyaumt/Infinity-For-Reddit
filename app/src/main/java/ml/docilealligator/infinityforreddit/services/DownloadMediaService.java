@@ -652,9 +652,10 @@ public class DownloadMediaService extends JobService {
                         }
                         DocumentFile checkForDuplicates = dir.findFile(fileName);
                         int extensionPosition = fileName.lastIndexOf('.');
+                        String baseName = extensionPosition <= 0 ? fileName : fileName.substring(0, extensionPosition);
                         int num = 1;
                         while (checkForDuplicates != null) {
-                            fileName = fileName.substring(0, extensionPosition) + " (" + num + ")." + extension;
+                            fileName = baseName + " (" + num + ")." + extension;
                             checkForDuplicates = dir.findFile(fileName);
                             num++;
                         }

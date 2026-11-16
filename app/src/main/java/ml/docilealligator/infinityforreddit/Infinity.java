@@ -49,6 +49,7 @@ import ml.docilealligator.infinityforreddit.font.TitleFontFamily;
 import ml.docilealligator.infinityforreddit.module.AppComponent;
 import ml.docilealligator.infinityforreddit.module.DaggerAppComponent;
 import ml.docilealligator.infinityforreddit.reminder.ReminderManager;
+import ml.docilealligator.infinityforreddit.utils.APIUtils;
 import ml.docilealligator.infinityforreddit.utils.MaterialYouUtils;
 import ml.docilealligator.infinityforreddit.utils.SharedPreferencesUtils;
 import ml.docilealligator.infinityforreddit.utils.Utils;
@@ -100,6 +101,8 @@ public class Infinity extends Application implements LifecycleObserver {
                 .create(this);
 
         mAppComponent.inject(this);
+
+        APIUtils.init(mSharedPreferences);
 
         appLock = mSecuritySharedPreferences.getBoolean(SharedPreferencesUtils.APP_LOCK, false);
         appLockTimeout = Long.parseLong(mSecuritySharedPreferences.getString(SharedPreferencesUtils.APP_LOCK_TIMEOUT, "600000"));

@@ -1786,4 +1786,16 @@
     <string name="mute">Mute</string>
     <string name="unmute">Unmute</string>
     <string name="remove_from_approved_users">Remove from approved users</string>
+
+    <string name="settings_reddit_api_title">Reddit API Settings</string>
+    <string name="settings_reddit_api_summary">Configure Reddit Client ID, Redirect URI, and User-Agent</string>
+    <string name="settings_client_id_title">Client ID</string>
+    <string name="settings_client_id_summary">Custom Reddit API Client ID. Leave empty to use default (RedReader).</string>
+    <string name="settings_redirect_uri_title">Redirect URI</string>
+    <string name="settings_redirect_uri_summary">Custom OAuth redirect URI. Default: redreader://rr_oauth_redir</string>
+    <string name="settings_user_agent_title">User-Agent</string>
+    <string name="settings_user_agent_summary">Custom Reddit User-Agent. Default: org.quantumbadger.redreader/1.27</string>
+    <string name="settings_reset_api_settings_title">Reset to Defaults</string>
+    <string name="settings_reset_api_settings_summary">Restore default RedReader API credentials</string>
+    <string name="settings_api_settings_reset_toast">Reddit API credentials reset to default</string>
 </resources>

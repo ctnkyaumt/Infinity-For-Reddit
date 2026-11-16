@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <ml.docilealligator.infinityforreddit.customviews.preference.CustomFontEditTextPreference
+        app:key="custom_client_id"
+        app:title="@string/settings_client_id_title"
+        app:summary="@string/settings_client_id_summary" />
+
+    <ml.docilealligator.infinityforreddit.customviews.preference.CustomFontEditTextPreference
+        app:key="custom_redirect_uri"
+        app:title="@string/settings_redirect_uri_title"
+        app:summary="@string/settings_redirect_uri_summary" />
+
+    <ml.docilealligator.infinityforreddit.customviews.preference.CustomFontEditTextPreference
+        app:key="custom_user_agent"
+        app:title="@string/settings_user_agent_title"
+        app:summary="@string/settings_user_agent_summary" />
+
+    <ml.docilealligator.infinityforreddit.customviews.preference.CustomFontPreference
+        app:key="reset_api_settings"
+        app:title="@string/settings_reset_api_settings_title"
+        app:summary="@string/settings_reset_api_settings_summary" />
+
+</PreferenceScreen>

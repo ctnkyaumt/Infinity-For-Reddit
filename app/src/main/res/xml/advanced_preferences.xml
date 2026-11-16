@@ -49,6 +49,11 @@
         app:title="@string/settings_restore_settings_title" />
 
     <ml.docilealligator.infinityforreddit.customviews.preference.CustomFontPreference
+        app:title="@string/settings_reddit_api_title"
+        app:summary="@string/settings_reddit_api_summary"
+        app:fragment="ml.docilealligator.infinityforreddit.settings.ApiSettingsPreferenceFragment" />
+
+    <ml.docilealligator.infinityforreddit.customviews.preference.CustomFontPreference
         app:title="@string/settings_crash_reports_title"
         app:fragment="ml.docilealligator.infinityforreddit.settings.CrashReportsFragment" />
 

@@ -190,83 +190,90 @@ public class LoginActivity extends BaseActivity {
         binding.webviewLoginActivity.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.contains("&code=") || url.contains("?code=")) {
-                    Uri uri = Uri.parse(url);
-                    String state = uri.getQueryParameter("state");
-                    if (state.equals(APIUtils.STATE)) {
-                        authCode = uri.getQueryParameter("code");
+                if (url.startsWith(APIUtils.REDIRECT_URI) || url.startsWith("redreader://rr_oauth_redir") || url.startsWith("infinity://localhost") || url.contains("&code=") || url.contains("?code=") || url.contains("code=")) {
+                    if (url.contains("error=access_denied")) {
+                        Toast.makeText(LoginActivity.this, R.string.access_denied, Toast.LENGTH_SHORT).show();
+                        finish();
+                        return true;
+                    }
+                    if (url.contains("code=")) {
+                        Uri uri = Uri.parse(url);
+                        String state = uri.getQueryParameter("state");
+                        if (state != null && state.equals(APIUtils.STATE)) {
+                            authCode = uri.getQueryParameter("code");
 
-                        Map<String, String> params = new HashMap<>();
-                        params.put(APIUtils.GRANT_TYPE_KEY, "authorization_code");
-                        params.put("code", authCode);
-                        params.put(APIUtils.REDIRECT_URI_KEY, APIUtils.REDIRECT_URI);
+                            Map<String, String> params = new HashMap<>();
+                            params.put(APIUtils.GRANT_TYPE_KEY, "authorization_code");
+                            params.put("code", authCode);
+                            params.put(APIUtils.REDIRECT_URI_KEY, APIUtils.REDIRECT_URI);
 
-                        RedditAPI api = mRetrofit.create(RedditAPI.class);
-                        Call<String> accessTokenCall = api.getAccessToken(APIUtils.getHttpBasicAuthHeader(), params);
-                        accessTokenCall.enqueue(new Callback<>() {
-                            @Override
-                            public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
-                                if (response.isSuccessful()) {
-                                    try {
-                                        String accountResponse = response.body();
-                                        if (accountResponse == null) {
-                                            //Handle error
-                                            return;
-                                        }
+                            RedditAPI api = mRetrofit.create(RedditAPI.class);
+                            Call<String> accessTokenCall = api.getAccessToken(APIUtils.getHttpBasicAuthHeader(), params);
+                            accessTokenCall.enqueue(new Callback<>() {
+                                @Override
+                                public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
+                                    if (response.isSuccessful()) {
+                                        try {
+                                            String accountResponse = response.body();
+                                            if (accountResponse == null) {
+                                                //Handle error
+                                                return;
+                                            }
 
-                                        JSONObject responseJSON = new JSONObject(accountResponse);
-                                        String accessToken = responseJSON.getString(APIUtils.ACCESS_TOKEN_KEY);
-                                        String refreshToken = responseJSON.getString(APIUtils.REFRESH_TOKEN_KEY);
+                                            JSONObject responseJSON = new JSONObject(accountResponse);
+                                            String accessToken = responseJSON.getString(APIUtils.ACCESS_TOKEN_KEY);
+                                            String refreshToken = responseJSON.getString(APIUtils.REFRESH_TOKEN_KEY);
 
-                                        FetchMyInfo.fetchAccountInfo(mExecutor, mHandler, mOauthRetrofit,
-                                                mRedditDataRoomDatabase, accessToken,
-                                                new FetchMyInfo.FetchMyInfoListener() {
-                                                    @Override
-                                                    public void onFetchMyInfoSuccess(String name, String profileImageUrl, String bannerImageUrl, int karma, boolean isMod) {
-                                                        mCurrentAccountSharedPreferences.edit().putString(SharedPreferencesUtils.ACCESS_TOKEN, accessToken)
-                                                                .putString(SharedPreferencesUtils.ACCOUNT_NAME, name)
-                                                                .putString(SharedPreferencesUtils.ACCOUNT_IMAGE_URL, profileImageUrl).apply();
-                                                        mCurrentAccountSharedPreferences.edit().remove(SharedPreferencesUtils.SUBSCRIBED_THINGS_SYNC_TIME).apply();
-                                                        ParseAndInsertNewAccount.parseAndInsertNewAccount(mExecutor, new Handler(), name, accessToken, refreshToken, profileImageUrl, bannerImageUrl,
-                                                                karma, isMod, authCode, mRedditDataRoomDatabase.accountDao(),
-                                                                () -> {
-                                                                    EventBus.getDefault().post(new NewUserLoggedInEvent());
-                                                                    finish();
-                                                                });
-                                                    }
-
-                                                    @Override
-                                                    public void onFetchMyInfoFailed(boolean parseFailed) {
-                                                        if (parseFailed) {
-                                                            Toast.makeText(LoginActivity.this, R.string.parse_user_info_error, Toast.LENGTH_SHORT).show();
-                                                        } else {
-                                                            Toast.makeText(LoginActivity.this, R.string.cannot_fetch_user_info, Toast.LENGTH_SHORT).show();
+                                            FetchMyInfo.fetchAccountInfo(mExecutor, mHandler, mOauthRetrofit,
+                                                    mRedditDataRoomDatabase, accessToken,
+                                                    new FetchMyInfo.FetchMyInfoListener() {
+                                                        @Override
+                                                        public void onFetchMyInfoSuccess(String name, String profileImageUrl, String bannerImageUrl, int karma, boolean isMod) {
+                                                            mCurrentAccountSharedPreferences.edit().putString(SharedPreferencesUtils.ACCESS_TOKEN, accessToken)
+                                                                    .putString(SharedPreferencesUtils.ACCOUNT_NAME, name)
+                                                                    .putString(SharedPreferencesUtils.ACCOUNT_IMAGE_URL, profileImageUrl).apply();
+                                                            mCurrentAccountSharedPreferences.edit().remove(SharedPreferencesUtils.SUBSCRIBED_THINGS_SYNC_TIME).apply();
+                                                            ParseAndInsertNewAccount.parseAndInsertNewAccount(mExecutor, new Handler(), name, accessToken, refreshToken, profileImageUrl, bannerImageUrl,
+                                                                    karma, isMod, authCode, mRedditDataRoomDatabase.accountDao(),
+                                                                    () -> {
+                                                                        EventBus.getDefault().post(new NewUserLoggedInEvent());
+                                                                        finish();
+                                                                    });
                                                         }
 
-                                                        finish();
-                                                    }
-                                        });
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
-                                        Toast.makeText(LoginActivity.this, R.string.parse_json_response_error, Toast.LENGTH_SHORT).show();
+                                                        @Override
+                                                        public void onFetchMyInfoFailed(boolean parseFailed) {
+                                                            if (parseFailed) {
+                                                                Toast.makeText(LoginActivity.this, R.string.parse_user_info_error, Toast.LENGTH_SHORT).show();
+                                                            } else {
+                                                                Toast.makeText(LoginActivity.this, R.string.cannot_fetch_user_info, Toast.LENGTH_SHORT).show();
+                                                            }
+
+                                                            finish();
+                                                        }
+                                            });
+                                        } catch (JSONException e) {
+                                            e.printStackTrace();
+                                            Toast.makeText(LoginActivity.this, R.string.parse_json_response_error, Toast.LENGTH_SHORT).show();
+                                            finish();
+                                        }
+                                    } else {
+                                        Toast.makeText(LoginActivity.this, R.string.retrieve_token_error, Toast.LENGTH_SHORT).show();
                                         finish();
                                     }
-                                } else {
+                                }
+
+                                @Override
+                                public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
                                     Toast.makeText(LoginActivity.this, R.string.retrieve_token_error, Toast.LENGTH_SHORT).show();
+                                    t.printStackTrace();
                                     finish();
                                 }
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
-                                Toast.makeText(LoginActivity.this, R.string.retrieve_token_error, Toast.LENGTH_SHORT).show();
-                                t.printStackTrace();
-                                finish();
-                            }
-                        });
-                    } else {
-                        Toast.makeText(LoginActivity.this, R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
-                        finish();
+                            });
+                        } else {
+                            Toast.makeText(LoginActivity.this, R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
                     }
 
                 } else if (url.contains("error=access_denied")) {
@@ -287,6 +294,30 @@ public class LoginActivity extends BaseActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                if (url != null && (url.contains("reddit.com/login") || url.contains("reddit.com/api/v1/authorize"))) {
+                    view.evaluateJavascript(
+                        "(function(){" +
+                        "    var banner = document.querySelector('#data-protection-consent-dialog > rpl-modal-card > button.button-secondary');" +
+                        "    if (banner) banner.click();" +
+                        "    document.addEventListener('DOMContentLoaded', function(e) {" +
+                        "        var b = document.querySelector('#data-protection-consent-dialog > rpl-modal-card > button.button-secondary');" +
+                        "        if (b) b.click();" +
+                        "    });" +
+                        "})()",
+                        null
+                    );
+
+                    view.evaluateJavascript(
+                        "(function() {" +
+                        "  document.addEventListener('submit', function(e) {" +
+                        "    if (e.submitter && e.submitter.name === 'authorize') {" +
+                        "      e.submitter.value = 'Allow';" +
+                        "    }" +
+                        "  }, true);" +
+                        "})();",
+                        null
+                    );
+                }
             }
 
             @Override

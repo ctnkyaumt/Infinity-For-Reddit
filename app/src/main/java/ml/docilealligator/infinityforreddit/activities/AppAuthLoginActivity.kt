@@ -2,6 +2,7 @@ package ml.docilealligator.infinityforreddit.activities
 
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.util.Linkify
@@ -266,8 +267,9 @@ class AppAuthLoginActivity : BaseActivity() {
             uriBuilder.appendQueryParameter(APIUtils.DURATION_KEY, APIUtils.DURATION)
             uriBuilder.appendQueryParameter(APIUtils.SCOPE_KEY, APIUtils.SCOPE)
 
+            val redirectScheme = Uri.parse(APIUtils.REDIRECT_URI).scheme ?: "infinity"
             val authTabIntent = AuthTabIntent.Builder().setEphemeralBrowsingEnabled(true).build()
-            authTabIntent.launch(mLauncher, uriBuilder.build(), "infinity")
+            authTabIntent.launch(mLauncher, uriBuilder.build(), redirectScheme)
         }
     }
 
