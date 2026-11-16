@@ -1,4 +1,4 @@
-﻿package ml.docilealligator.infinityforreddit.settings;
+package ml.docilealligator.infinityforreddit.settings;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
