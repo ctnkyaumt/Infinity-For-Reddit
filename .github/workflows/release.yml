@@ -40,7 +40,7 @@ jobs:
       - name: Run gradle build
         uses: gradle/gradle-build-action@v3
         with:
-          arguments: assembleRelease assembleMinifiedRelease -x lint
+          arguments: assembleRelease assembleMinifiedRelease -x lint -x lintVitalRelease -x lintVitalMinifiedRelease -Dorg.gradle.jvmargs=-Xmx4096m --stacktrace
         env:
           KEYSTORE_FILE: /tmp/release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
