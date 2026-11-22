@@ -22,6 +22,9 @@ import ml.docilealligator.infinityforreddit.network.AnonymousAccessTokenIntercep
 import ml.docilealligator.infinityforreddit.network.RedgifsAccessTokenAuthenticator;
 import ml.docilealligator.infinityforreddit.network.ServerAccessTokenAuthenticator;
 import ml.docilealligator.infinityforreddit.network.SortTypeConverterFactory;
+import ml.docilealligator.infinityforreddit.network.patcheddit.EscapedUrlsRepairInterceptor;
+import ml.docilealligator.infinityforreddit.network.patcheddit.MoreChildrenFallbackInterceptor;
+import ml.docilealligator.infinityforreddit.network.patcheddit.RedditInfoFallbackInterceptor;
 import ml.docilealligator.infinityforreddit.utils.APIUtils;
 import ml.docilealligator.infinityforreddit.utils.SharedPreferencesUtils;
 import okhttp3.ConnectionPool;
@@ -123,6 +126,9 @@ abstract class NetworkModule {
 
         return httpClient.newBuilder()
                 .addInterceptor(anonymousAccessTokenInterceptor)
+                .addInterceptor(new MoreChildrenFallbackInterceptor())
+                .addInterceptor(new RedditInfoFallbackInterceptor())
+                .addInterceptor(new EscapedUrlsRepairInterceptor())
                 .connectionPool(connectionPool)
                 .build();
     }
@@ -136,6 +142,9 @@ abstract class NetworkModule {
                                             @Named("current_account") SharedPreferences currentAccountSharedPreferences,
                                             ConnectionPool connectionPool) {
         return httpClient.newBuilder()
+                .addInterceptor(new MoreChildrenFallbackInterceptor())
+                .addInterceptor(new RedditInfoFallbackInterceptor())
+                .addInterceptor(new EscapedUrlsRepairInterceptor())
                 .authenticator(new AccessTokenAuthenticator(retrofit, redditDataRoomDatabase, currentAccountSharedPreferences))
                 .connectionPool(connectionPool)
                 .build();

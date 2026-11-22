@@ -39,6 +39,7 @@ import ml.docilealligator.infinityforreddit.customviews.preference.CustomFontPre
 import ml.docilealligator.infinityforreddit.events.RecreateActivityEvent;
 import ml.docilealligator.infinityforreddit.readpost.ReadPostDao;
 import ml.docilealligator.infinityforreddit.readpost.ReadPostType;
+import ml.docilealligator.infinityforreddit.utils.APIUtils;
 import ml.docilealligator.infinityforreddit.utils.SharedPreferencesUtils;
 
 /**
@@ -289,6 +290,8 @@ public class AdvancedPreferenceFragment extends CustomFontPreferenceFragmentComp
                             if (disableNsfwForever) {
                                 mSharedPreferences.edit().putBoolean(SharedPreferencesUtils.DISABLE_NSFW_FOREVER, true).apply();
                             }
+
+                            APIUtils.init(mSharedPreferences);
 
                             Toast.makeText(mActivity, R.string.reset_all_settings_success, Toast.LENGTH_SHORT).show();
                             EventBus.getDefault().post(new RecreateActivityEvent());

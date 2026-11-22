@@ -75,7 +75,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import ml.docilealligator.infinityforreddit.BuildConfig;
 import ml.docilealligator.infinityforreddit.Infinity;
 import ml.docilealligator.infinityforreddit.R;
 import ml.docilealligator.infinityforreddit.RecyclerViewContentScrollingInterface;
@@ -418,13 +417,6 @@ public class MainActivity extends BaseActivity implements SortTypeSelectionCallb
         } else {
             mMessageFullname = getIntent().getStringExtra(EXTRA_MESSAGE_FULLNAME);
             mNewAccountName = getIntent().getStringExtra(EXTRA_NEW_ACCOUNT_NAME);
-        }
-
-        if (mInternalSharedPreferences.getInt(SharedPreferencesUtils.CURRENT_VERSION, 1) < BuildConfig.VERSION_CODE && savedInstanceState == null) {
-            /*ImportantInfoBottomSheetFragment fragment = new ImportantInfoBottomSheetFragment();
-            fragment.setCancelable(false);
-            fragment.show(getSupportFragmentManager(), fragment.getTag());*/
-            NewFeaturesActivity.Companion.startNewFeaturesActivity(this);
         }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {

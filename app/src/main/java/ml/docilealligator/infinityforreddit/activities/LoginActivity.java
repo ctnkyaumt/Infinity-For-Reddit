@@ -54,6 +54,7 @@ import ml.docilealligator.infinityforreddit.customtheme.CustomThemeWrapper;
 import ml.docilealligator.infinityforreddit.databinding.ActivityLoginBinding;
 import ml.docilealligator.infinityforreddit.events.NewUserLoggedInEvent;
 import ml.docilealligator.infinityforreddit.utils.APIUtils;
+import ml.docilealligator.infinityforreddit.utils.OAuthLoginHelper;
 import ml.docilealligator.infinityforreddit.utils.SharedPreferencesUtils;
 import ml.docilealligator.infinityforreddit.utils.Utils;
 import retrofit2.Call;
@@ -64,6 +65,7 @@ import retrofit2.Retrofit;
 public class LoginActivity extends BaseActivity {
 
     private static final String IS_AGREE_TO_USER_AGGREMENT_STATE = "IATUAS";
+    private static final String OAUTH_STATE_KEY = "OAUTH_STATE";
 
     @Inject
     @Named("no_oauth")
@@ -84,6 +86,7 @@ public class LoginActivity extends BaseActivity {
     @Inject
     Executor mExecutor;
     private String authCode;
+    private String mOAuthState;
     private boolean isAgreeToUserAgreement = true;
     private ActivityLoginBinding binding;
 
@@ -148,6 +151,10 @@ public class LoginActivity extends BaseActivity {
 
         if (savedInstanceState != null) {
             isAgreeToUserAgreement = savedInstanceState.getBoolean(IS_AGREE_TO_USER_AGGREMENT_STATE);
+            mOAuthState = savedInstanceState.getString(OAUTH_STATE_KEY);
+        }
+        if (mOAuthState == null || mOAuthState.isEmpty()) {
+            mOAuthState = OAuthLoginHelper.generateOAuthState();
         }
 
         binding.webviewLoginActivity.getSettings().setJavaScriptEnabled(true);
@@ -162,7 +169,7 @@ public class LoginActivity extends BaseActivity {
         Uri.Builder uriBuilder = baseUri.buildUpon();
         uriBuilder.appendQueryParameter(APIUtils.CLIENT_ID_KEY, APIUtils.CLIENT_ID);
         uriBuilder.appendQueryParameter(APIUtils.RESPONSE_TYPE_KEY, APIUtils.RESPONSE_TYPE);
-        uriBuilder.appendQueryParameter(APIUtils.STATE_KEY, APIUtils.STATE);
+        uriBuilder.appendQueryParameter(APIUtils.STATE_KEY, mOAuthState);
         uriBuilder.appendQueryParameter(APIUtils.REDIRECT_URI_KEY, APIUtils.REDIRECT_URI);
         uriBuilder.appendQueryParameter(APIUtils.DURATION_KEY, APIUtils.DURATION);
         uriBuilder.appendQueryParameter(APIUtils.SCOPE_KEY, APIUtils.SCOPE);
@@ -190,17 +197,26 @@ public class LoginActivity extends BaseActivity {
         binding.webviewLoginActivity.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.startsWith(APIUtils.REDIRECT_URI) || url.startsWith("redreader://rr_oauth_redir") || url.startsWith("infinity://localhost") || url.contains("&code=") || url.contains("?code=") || url.contains("code=")) {
-                    if (url.contains("error=access_denied")) {
-                        Toast.makeText(LoginActivity.this, R.string.access_denied, Toast.LENGTH_SHORT).show();
+                if (url == null) {
+                    return false;
+                }
+                if (OAuthLoginHelper.isOAuthCallbackUrl(url, APIUtils.REDIRECT_URI)) {
+                    String error = OAuthLoginHelper.getQueryParam(url, "error");
+                    if (error != null) {
+                        if ("access_denied".equals(error)) {
+                            Toast.makeText(LoginActivity.this, R.string.access_denied, Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(LoginActivity.this, R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
+                        }
                         finish();
                         return true;
                     }
-                    if (url.contains("code=")) {
-                        Uri uri = Uri.parse(url);
-                        String state = uri.getQueryParameter("state");
-                        if (state != null && state.equals(APIUtils.STATE)) {
-                            authCode = uri.getQueryParameter("code");
+
+                    String code = OAuthLoginHelper.getQueryParam(url, "code");
+                    if (code != null && !code.isEmpty()) {
+                        String state = OAuthLoginHelper.getQueryParam(url, APIUtils.STATE_KEY);
+                        if (OAuthLoginHelper.isMatchingOAuthState(mOAuthState, state)) {
+                            authCode = code;
 
                             Map<String, String> params = new HashMap<>();
                             params.put(APIUtils.GRANT_TYPE_KEY, "authorization_code");
@@ -274,11 +290,11 @@ public class LoginActivity extends BaseActivity {
                             Toast.makeText(LoginActivity.this, R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
                             finish();
                         }
+                    } else {
+                        Toast.makeText(LoginActivity.this, R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
+                        finish();
                     }
 
-                } else if (url.contains("error=access_denied")) {
-                    Toast.makeText(LoginActivity.this, R.string.access_denied, Toast.LENGTH_SHORT).show();
-                    finish();
                 } else {
                     view.loadUrl(url);
                 }
@@ -297,18 +313,33 @@ public class LoginActivity extends BaseActivity {
                 if (url != null && (url.contains("reddit.com/login") || url.contains("reddit.com/api/v1/authorize"))) {
                     view.evaluateJavascript(
                         "(function(){" +
-                        "    var banner = document.querySelector('#data-protection-consent-dialog > rpl-modal-card > button.button-secondary');" +
-                        "    if (banner) banner.click();" +
-                        "    document.addEventListener('DOMContentLoaded', function(e) {" +
-                        "        var b = document.querySelector('#data-protection-consent-dialog > rpl-modal-card > button.button-secondary');" +
-                        "        if (b) b.click();" +
-                        "    });" +
+                        "    var selector = '#data-protection-consent-dialog > rpl-modal-card > button.button-secondary';" +
+                        "    var banner = document.querySelector(selector);" +
+                        "    if (banner) {" +
+                        "        banner.click();" +
+                        "    } else if (!window.__infinityConsentObserver && typeof MutationObserver !== 'undefined') {" +
+                        "        var target = document.body || document.documentElement;" +
+                        "        if (target) {" +
+                        "            var observer = new MutationObserver(function() {" +
+                        "                var b = document.querySelector(selector);" +
+                        "                if (b) {" +
+                        "                    b.click();" +
+                        "                    observer.disconnect();" +
+                        "                }" +
+                        "            });" +
+                        "            window.__infinityConsentObserver = observer;" +
+                        "            observer.observe(target, { childList: true, subtree: true });" +
+                        "            setTimeout(function() { observer.disconnect(); }, 5000);" +
+                        "        }" +
+                        "    }" +
                         "})()",
                         null
                     );
 
                     view.evaluateJavascript(
                         "(function() {" +
+                        "  if (window.__infinityAuthSubmitListenerAttached) return;" +
+                        "  window.__infinityAuthSubmitListenerAttached = true;" +
                         "  document.addEventListener('submit', function(e) {" +
                         "    if (e.submitter && e.submitter.name === 'authorize') {" +
                         "      e.submitter.value = 'Allow';" +
@@ -373,6 +404,7 @@ public class LoginActivity extends BaseActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(IS_AGREE_TO_USER_AGGREMENT_STATE, isAgreeToUserAgreement);
+        outState.putString(OAUTH_STATE_KEY, mOAuthState);
     }
 
     @Override

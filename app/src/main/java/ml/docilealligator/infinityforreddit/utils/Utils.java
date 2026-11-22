@@ -55,6 +55,7 @@ import java.util.regex.Pattern;
 
 import io.noties.markwon.core.spans.CustomTypefaceSpan;
 import ml.docilealligator.infinityforreddit.R;
+import ml.docilealligator.infinityforreddit.network.patcheddit.RelativeMarkdownLinks;
 import ml.docilealligator.infinityforreddit.thing.MediaMetadata;
 import ml.docilealligator.infinityforreddit.thing.SortType;
 import ml.docilealligator.infinityforreddit.thing.UploadedImage;
@@ -87,7 +88,11 @@ public final class Utils {
     private static final Pattern PROCESSING_IMG_PATTERN = Pattern.compile("\\*?Processing img (\\w+)\\.{3}\\*?");
 
     public static String modifyMarkdown(String markdown) {
-        String regexed = REGEX_PATTERNS[0].matcher(markdown).replaceAll("[$0](https://www.reddit.com$0)");
+        if (markdown == null) {
+            return null;
+        }
+        String regexed = RelativeMarkdownLinks.repairMarkdown(markdown);
+        regexed = REGEX_PATTERNS[0].matcher(regexed).replaceAll("[$0](https://www.reddit.com$0)");
         regexed = REGEX_PATTERNS[1].matcher(regexed).replaceAll("[$0](https://www.reddit.com/$0)");
         regexed = REGEX_PATTERNS[2].matcher(regexed).replaceAll("^");
 

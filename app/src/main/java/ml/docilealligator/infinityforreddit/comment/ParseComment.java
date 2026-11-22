@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import ml.docilealligator.infinityforreddit.commentfilter.CommentFilter;
+import ml.docilealligator.infinityforreddit.network.patcheddit.RelativeMarkdownLinks;
 import ml.docilealligator.infinityforreddit.thing.MediaMetadata;
 import ml.docilealligator.infinityforreddit.utils.JSONUtils;
 import ml.docilealligator.infinityforreddit.utils.Utils;
@@ -299,7 +300,8 @@ public class ParseComment {
             mediaMetadataMap = result.mediaMetadataMap;
         }
         String commentRawText = Utils.trimTrailingWhitespace(
-                Html.fromHtml(singleCommentData.getString(JSONUtils.BODY_HTML_KEY))).toString();
+                Html.fromHtml(RelativeMarkdownLinks.repairHtml(
+                        singleCommentData.getString(JSONUtils.BODY_HTML_KEY)))).toString();
         String permalink = Html.fromHtml(singleCommentData.getString(JSONUtils.PERMALINK_KEY)).toString();
         int score = singleCommentData.getInt(JSONUtils.SCORE_KEY);
         int voteType;

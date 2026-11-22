@@ -8,7 +8,6 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Base64;
 import android.view.View;
 import android.widget.Toast;
 
@@ -26,7 +25,6 @@ import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -44,6 +42,7 @@ import ml.docilealligator.infinityforreddit.customtheme.CustomThemeWrapper;
 import ml.docilealligator.infinityforreddit.databinding.ActivityLoginChromeCustomTabBinding;
 import ml.docilealligator.infinityforreddit.events.NewUserLoggedInEvent;
 import ml.docilealligator.infinityforreddit.utils.APIUtils;
+import ml.docilealligator.infinityforreddit.utils.OAuthLoginHelper;
 import ml.docilealligator.infinityforreddit.utils.SharedPreferencesUtils;
 import ml.docilealligator.infinityforreddit.utils.Utils;
 import retrofit2.Call;
@@ -167,9 +166,7 @@ public class LoginChromeCustomTabActivity extends BaseActivity {
     }
 
     private String generateAndStoreOAuthState() {
-        byte[] randomBytes = new byte[32];
-        new SecureRandom().nextBytes(randomBytes);
-        String state = Base64.encodeToString(randomBytes, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
+        String state = OAuthLoginHelper.generateOAuthState();
         mSharedPreferences.edit().putString(SharedPreferencesUtils.OAUTH_STATE, state).apply();
         return state;
     }
@@ -210,7 +207,7 @@ public class LoginChromeCustomTabActivity extends BaseActivity {
             String state = uri.getQueryParameter("state");
             String expectedState = mSharedPreferences.getString(SharedPreferencesUtils.OAUTH_STATE, null);
             mSharedPreferences.edit().remove(SharedPreferencesUtils.OAUTH_STATE).apply();
-            if (expectedState != null && expectedState.equals(state)) {
+            if (OAuthLoginHelper.isMatchingOAuthState(expectedState, state)) {
                 Map<String, String> params = new HashMap<>();
                 params.put(APIUtils.GRANT_TYPE_KEY, "authorization_code");
                 params.put("code", authCode);
@@ -286,6 +283,9 @@ public class LoginChromeCustomTabActivity extends BaseActivity {
 
         } else if ("access_denied".equals(uri.getQueryParameter("error"))) {
             Toast.makeText(this, R.string.access_denied, Toast.LENGTH_SHORT).show();
+            finish();
+        } else if (uri.getQueryParameter("error") != null) {
+            Toast.makeText(this, R.string.something_went_wrong, Toast.LENGTH_SHORT).show();
             finish();
         }
     }

@@ -22,6 +22,7 @@ import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ml.docilealligator.infinityforreddit.network.patcheddit.RelativeMarkdownLinks;
 import ml.docilealligator.infinityforreddit.postfilter.PostFilter;
 import ml.docilealligator.infinityforreddit.readpost.ReadPostsListInterface;
 import ml.docilealligator.infinityforreddit.thing.MediaMetadata;
@@ -942,7 +943,8 @@ public class ParsePost {
                     post.setSelfTextPlainTrimmed("");
                 } else {
                     String selfTextPlain = Utils.trimTrailingWhitespace(
-                            Html.fromHtml(data.getString(JSONUtils.SELFTEXT_HTML_KEY))).toString();
+                            Html.fromHtml(RelativeMarkdownLinks.repairHtml(
+                                    data.getString(JSONUtils.SELFTEXT_HTML_KEY)))).toString();
                     post.setSelfTextPlain(selfTextPlain);
                     if (selfTextPlain.length() > 250) {
                         selfTextPlain = selfTextPlain.substring(0, 250);

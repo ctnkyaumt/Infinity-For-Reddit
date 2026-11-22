@@ -62,6 +62,8 @@ import ml.docilealligator.infinityforreddit.customviews.compose.ThemedTopAppBar
 import ml.docilealligator.infinityforreddit.events.NewUserLoggedInEvent
 import ml.docilealligator.infinityforreddit.extensions.linkify
 import ml.docilealligator.infinityforreddit.utils.APIUtils
+import ml.docilealligator.infinityforreddit.utils.OAuthLoginHelper
+import ml.docilealligator.infinityforreddit.utils.SharedPreferencesUtils
 import ml.docilealligator.infinityforreddit.utils.getChromeCustomTabPackageName
 import ml.docilealligator.infinityforreddit.viewmodels.AppAuthLoginViewModel
 import ml.docilealligator.infinityforreddit.viewmodels.AppAuthLoginViewModel.Companion.provideFactory
@@ -258,11 +260,14 @@ class AppAuthLoginActivity : BaseActivity() {
                 return
             }
 
+            val state = OAuthLoginHelper.generateOAuthState()
+            mSharedPreferences.edit().putString(SharedPreferencesUtils.OAUTH_STATE, state).apply()
+
             val baseUri = APIUtils.OAUTH_URL.toUri()
             val uriBuilder = baseUri.buildUpon()
             uriBuilder.appendQueryParameter(APIUtils.CLIENT_ID_KEY, APIUtils.CLIENT_ID)
             uriBuilder.appendQueryParameter(APIUtils.RESPONSE_TYPE_KEY, APIUtils.RESPONSE_TYPE)
-            uriBuilder.appendQueryParameter(APIUtils.STATE_KEY, APIUtils.STATE)
+            uriBuilder.appendQueryParameter(APIUtils.STATE_KEY, state)
             uriBuilder.appendQueryParameter(APIUtils.REDIRECT_URI_KEY, APIUtils.REDIRECT_URI)
             uriBuilder.appendQueryParameter(APIUtils.DURATION_KEY, APIUtils.DURATION)
             uriBuilder.appendQueryParameter(APIUtils.SCOPE_KEY, APIUtils.SCOPE)
@@ -277,7 +282,9 @@ class AppAuthLoginActivity : BaseActivity() {
         result.resultCode
         when (result.resultCode) {
             AuthTabIntent.RESULT_OK -> result.resultUri?.let {
-                mViewModel.setUpAccount(it)
+                val expectedState = mSharedPreferences.getString(SharedPreferencesUtils.OAUTH_STATE, null)
+                mSharedPreferences.edit().remove(SharedPreferencesUtils.OAUTH_STATE).apply()
+                mViewModel.setUpAccount(it, expectedState)
             }
             AuthTabIntent.RESULT_CANCELED,
             AuthTabIntent.RESULT_VERIFICATION_FAILED -> mViewModel.setError(R.string.login_failed_auth_result_verification_failed)

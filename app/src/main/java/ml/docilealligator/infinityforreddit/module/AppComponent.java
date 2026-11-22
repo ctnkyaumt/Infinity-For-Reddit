@@ -35,7 +35,6 @@ import ml.docilealligator.infinityforreddit.activities.LoginActivity;
 import ml.docilealligator.infinityforreddit.activities.LoginChromeCustomTabActivity;
 import ml.docilealligator.infinityforreddit.activities.MainActivity;
 import ml.docilealligator.infinityforreddit.activities.ModMailActivity;
-import ml.docilealligator.infinityforreddit.activities.NewFeaturesActivity;
 import ml.docilealligator.infinityforreddit.activities.OnboardingActivity;
 import ml.docilealligator.infinityforreddit.activities.PostFilterPreferenceActivity;
 import ml.docilealligator.infinityforreddit.activities.PostFilterUsageListingActivity;
@@ -74,7 +73,6 @@ import ml.docilealligator.infinityforreddit.activities.WebViewActivity;
 import ml.docilealligator.infinityforreddit.activities.WikiActivity;
 import ml.docilealligator.infinityforreddit.bottomsheetfragments.AccountChooserBottomSheetFragment;
 import ml.docilealligator.infinityforreddit.bottomsheetfragments.FlairBottomSheetFragment;
-import ml.docilealligator.infinityforreddit.bottomsheetfragments.ImportantInfoBottomSheetFragment;
 import ml.docilealligator.infinityforreddit.bottomsheetfragments.PostOptionsBottomSheetFragment;
 import ml.docilealligator.infinityforreddit.broadcastreceivers.BootCompletedBroadcastReceiver;
 import ml.docilealligator.infinityforreddit.fragments.CommentsListingFragment;
@@ -339,8 +337,6 @@ public interface AppComponent {
 
     void inject(ViewPostDetailFragmentNew viewPostDetailFragmentNew);
 
-    void inject(ImportantInfoBottomSheetFragment importantInfoBottomSheetFragment);
-
     void inject(ReminderListingActivity reminderListingActivity);
 
     void inject(SetReminderActivity setReminderActivity);
@@ -350,8 +346,6 @@ public interface AppComponent {
     void inject(OnboardingActivity onboardingActivity);
 
     void inject(BootCompletedBroadcastReceiver bootCompletedBroadcastReceiver);
-
-    void inject(NewFeaturesActivity newFeaturesActivity);
 
     void inject(ModMailActivity modMailActivity);
 

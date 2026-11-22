@@ -44,6 +44,7 @@ import ml.docilealligator.infinityforreddit.readpost.ReadPost;
 import ml.docilealligator.infinityforreddit.reminder.Reminder;
 import ml.docilealligator.infinityforreddit.subscribedsubreddit.SubscribedSubredditData;
 import ml.docilealligator.infinityforreddit.subscribeduser.SubscribedUserData;
+import ml.docilealligator.infinityforreddit.utils.APIUtils;
 import ml.docilealligator.infinityforreddit.utils.CustomThemeSharedPreferencesUtils;
 import ml.docilealligator.infinityforreddit.utils.SharedPreferencesUtils;
 import ml.docilealligator.infinityforreddit.utils.Utils;
@@ -108,7 +109,11 @@ public class RestoreSettings {
                                 for (File f : restoreFiles) {
                                     if (f.isFile()) {
                                         if (f.getName().startsWith(SharedPreferencesUtils.DEFAULT_PREFERENCES_FILE)) {
-                                            result = result & importSharedPreferencsFromFile(defaultSharedPreferences, f.toString());
+                                            boolean imported = importSharedPreferencsFromFile(defaultSharedPreferences, f.toString());
+                                            result = result & imported;
+                                            if (imported) {
+                                                APIUtils.init(defaultSharedPreferences);
+                                            }
                                         } else if (f.getName().startsWith(CustomThemeSharedPreferencesUtils.LIGHT_THEME_SHARED_PREFERENCES_FILE)) {
                                             result = result & importSharedPreferencsFromFile(lightThemeSharedPreferences, f.toString());
                                         } else if (f.getName().startsWith(CustomThemeSharedPreferencesUtils.DARK_THEME_SHARED_PREFERENCES_FILE)) {

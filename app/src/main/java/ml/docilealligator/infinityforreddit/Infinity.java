@@ -22,6 +22,7 @@ import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
 import androidx.lifecycle.ProcessLifecycleOwner;
+import androidx.preference.PreferenceManager;
 
 import com.evernote.android.state.StateSaver;
 import com.livefront.bridge.Bridge;
@@ -97,12 +98,12 @@ public class Infinity extends Application implements LifecycleObserver {
     public void onCreate() {
         super.onCreate();
 
+        APIUtils.init(PreferenceManager.getDefaultSharedPreferences(this));
+
         mAppComponent = DaggerAppComponent.factory()
                 .create(this);
 
         mAppComponent.inject(this);
-
-        APIUtils.init(mSharedPreferences);
 
         appLock = mSecuritySharedPreferences.getBoolean(SharedPreferencesUtils.APP_LOCK, false);
         appLockTimeout = Long.parseLong(mSecuritySharedPreferences.getString(SharedPreferencesUtils.APP_LOCK_TIMEOUT, "600000"));

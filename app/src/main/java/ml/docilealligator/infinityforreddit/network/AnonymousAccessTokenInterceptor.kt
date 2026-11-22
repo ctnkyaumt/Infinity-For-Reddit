@@ -14,6 +14,8 @@ class AnonymousAccessTokenInterceptor(
 ) : Interceptor {
     private val cachedAccessToken = AtomicReference<String?>(null)
     private val refreshLock = Any()
+    @Volatile
+    private var tokenVersion: Int = APIUtils.getAnonymousTokenVersion()
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
@@ -26,7 +28,24 @@ class AnonymousAccessTokenInterceptor(
 
         val newUrl = originalRequest.url.newBuilder().host("oauth.reddit.com").build()
 
-        val token = getOrFetchToken()
+        syncTokenVersionIfNeeded()
+
+        var token = getOrFetchToken()
+        if (token.isNullOrBlank()) {
+            synchronized(refreshLock) {
+                syncTokenVersionLocked()
+                val currentAccessToken = getOrFetchToken()
+                token = if (!currentAccessToken.isNullOrBlank()) {
+                    currentAccessToken
+                } else {
+                    refreshToken()
+                }
+            }
+        }
+
+        if (token.isNullOrBlank()) {
+            return chain.proceed(originalRequest)
+        }
 
         val authenticatedRequest = originalRequest.newBuilder()
             .url(newUrl)
@@ -40,9 +59,10 @@ class AnonymousAccessTokenInterceptor(
             val expiredAccessToken = response.request.header("Authorization")?.replace("bearer ", "")
 
             synchronized(refreshLock) {
+                syncTokenVersionLocked()
                 val currentAccessToken = getOrFetchToken()
 
-                val newAccessToken = if (currentAccessToken != expiredAccessToken && currentAccessToken != null) {
+                val newAccessToken = if (currentAccessToken != expiredAccessToken && !currentAccessToken.isNullOrBlank()) {
                     currentAccessToken
                 } else {
                     try {
@@ -65,11 +85,41 @@ class AnonymousAccessTokenInterceptor(
         }
     }
 
+    private fun syncTokenVersionIfNeeded() {
+        if (tokenVersion != APIUtils.getAnonymousTokenVersion()) {
+            synchronized(refreshLock) {
+                syncTokenVersionLocked()
+            }
+        }
+    }
+
+    private fun syncTokenVersionLocked() {
+        val latestVersion = APIUtils.getAnonymousTokenVersion()
+        if (tokenVersion != latestVersion) {
+            cachedAccessToken.set(null)
+            redditDataRoomDatabase.accountDaoKt().setAnonymousAccessToken(null)
+            tokenVersion = latestVersion
+        }
+    }
+
     private fun getOrFetchToken(): String? {
-        return cachedAccessToken.get() ?: synchronized(refreshLock) {
-            val accessToken = redditDataRoomDatabase.accountDaoKt().getAnonymousAccessToken()
-            cachedAccessToken.set(accessToken)
-            accessToken
+        val cached = cachedAccessToken.get()
+        if (!cached.isNullOrBlank()) {
+            return cached
+        }
+        return synchronized(refreshLock) {
+            val currentCached = cachedAccessToken.get()
+            if (!currentCached.isNullOrBlank()) {
+                currentCached
+            } else {
+                val accessToken = redditDataRoomDatabase.accountDaoKt().getAnonymousAccessToken()
+                if (!accessToken.isNullOrBlank()) {
+                    cachedAccessToken.set(accessToken)
+                    accessToken
+                } else {
+                    null
+                }
+            }
         }
     }
 
@@ -83,7 +133,9 @@ class AnonymousAccessTokenInterceptor(
                 APIUtils.getHttpBasicAuthHeader(), params
             ).execute()
             if (response.isSuccessful) {
-                val newAccessToken = JSONObject(response.body()).getString(APIUtils.ACCESS_TOKEN_KEY)
+                val body = response.body()
+                if (body.isNullOrBlank()) return null
+                val newAccessToken = JSONObject(body).getString(APIUtils.ACCESS_TOKEN_KEY)
                 redditDataRoomDatabase.accountDaoKt().setAnonymousAccessToken(newAccessToken)
                 cachedAccessToken.set(newAccessToken)
 

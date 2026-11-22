@@ -17,6 +17,7 @@ import ml.docilealligator.infinityforreddit.account.Account
 import ml.docilealligator.infinityforreddit.apis.RedditAPIKt
 import ml.docilealligator.infinityforreddit.utils.APIUtils
 import ml.docilealligator.infinityforreddit.utils.JSONUtils
+import ml.docilealligator.infinityforreddit.utils.OAuthLoginHelper
 import ml.docilealligator.infinityforreddit.utils.SharedPreferencesUtils
 import org.json.JSONException
 import org.json.JSONObject
@@ -44,10 +45,10 @@ class AppAuthLoginViewModel(
         _errorMessageId.value = null
     }
 
-    fun setUpAccount(uri: Uri) {
+    fun setUpAccount(uri: Uri, expectedState: String?) {
         viewModelScope.launch {
             val state = uri.getQueryParameter("state")
-            if (state == APIUtils.STATE) {
+            if (OAuthLoginHelper.isMatchingOAuthState(expectedState, state)) {
                 val authCode = uri.getQueryParameter("code")
                 authCode?.let {
                     val params: MutableMap<String, String> = HashMap()

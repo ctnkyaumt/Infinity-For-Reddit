@@ -1,7 +1,12 @@
-﻿name: Release
+name: Release
 
 'on':
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag name (defaults to v<versionName> from app/build.gradle)'
+        required: false
+        type: string
   push:
     tags:
       - 'v*'
@@ -49,11 +54,22 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REF_TYPE: ${{ github.ref_type }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            TAG_NAME="${{ github.ref_name }}"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG_NAME="$GITHUB_REF_NAME"
+          elif [ -n "$INPUT_TAG" ]; then
+            TAG_NAME="$INPUT_TAG"
           else
-            TAG_NAME="v8.4.0-patched"
+            VERSION_NAME=$(sed -nE 's/^[[:space:]]*versionName[[:space:]]+"([^"]+)".*/\1/p' app/build.gradle | head -n 1)
+            TAG_NAME="v$VERSION_NAME"
+          fi
+
+          if [ -z "$TAG_NAME" ] || [ "$TAG_NAME" = "v" ]; then
+            echo "Failed to resolve TAG_NAME" >&2
+            exit 1
           fi
 
           RELEASE_TITLE="Infinity for Reddit $TAG_NAME"
@@ -63,8 +79,15 @@ jobs:
           - Standard release: \`app-release.apk\`
           - Minified release: \`app-minifiedRelease.apk\`"
 
-          gh release create "$TAG_NAME" \
-            app/build/outputs/apk/release/app-release.apk \
-            app/build/outputs/apk/minifiedRelease/app-minifiedRelease.apk \
-            --title "$RELEASE_TITLE" \
-            --notes "$RELEASE_NOTES"
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" \
+              app/build/outputs/apk/release/app-release.apk \
+              app/build/outputs/apk/minifiedRelease/app-minifiedRelease.apk \
+              --clobber
+          else
+            gh release create "$TAG_NAME" \
+              app/build/outputs/apk/release/app-release.apk \
+              app/build/outputs/apk/minifiedRelease/app-minifiedRelease.apk \
+              --title "$RELEASE_TITLE" \
+              --notes "$RELEASE_NOTES"
+          fi
